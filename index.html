@@ -1,0 +1,518 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Task Manager</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe Script', 'Brush Script MT', 'Lucida Handwriting', cursive;
+            background: linear-gradient(135deg, #FFB3BA, #FFDFBA, #FFFFBA, #BAFFC9, #BAE1FF, #E8BAFF, #FFB3F0);
+            color: #333;
+            min-height: 100vh;
+            background-attachment: fixed;
+        }
+        header {
+            background: linear-gradient(135deg, #F8BBD0, #F48FB1);
+            color: #fff;
+            padding: 30px 20px;
+            text-align: center;
+            box-shadow: 0 4px 20px rgba(244,143,177,0.3);
+        }
+        header h1 { font-size: 2.2rem; margin-bottom: 8px; color: #fff; font-family: 'Brush Script MT', 'Segoe Script', 'Lucida Handwriting', cursive; }
+        header h1 span { color: #fff; }
+        header p { color: #fff; font-size: 1.1rem; font-family: 'Segoe Script', 'Lucida Handwriting', cursive; }
+        .stats-bar {
+            display: flex; justify-content: center;
+            flex-wrap: wrap; gap: 15px; margin-top: 20px;
+        }
+        .stat-pill {
+            padding: 10px 22px; border-radius: 25px;
+            font-size: 0.9rem; font-weight: 600;
+            background: rgba(255,255,255,0.15);
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+        .stat-pill span { font-weight: 700; font-size: 1.1rem; }
+        .stat-pendientes span { color: #ffb74d; }
+        .stat-completadas span { color: #66bb6a; }
+        .stat-total span { color: #ce93d8; }
+        .app { max-width: 900px; margin: 0 auto; padding: 30px 20px; }
+        .form-card {
+            background: #fff; border-radius: 14px; padding: 25px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+            margin-bottom: 25px;
+        }
+        .form-card h2 {
+            color: #F48FB1; margin-bottom: 18px; font-size: 1.2rem;
+        }
+        .form-row {
+            display: flex; gap: 12px; flex-wrap: wrap;
+        }
+        .form-row input[type="text"] {
+            flex: 2; min-width: 200px;
+        }
+        .form-row select { flex: 1; min-width: 140px; }
+        input[type="text"], select {
+            padding: 12px 16px;
+            background: #f8f9fc;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            color: #333;
+            font-size: 1rem;
+            font-family: inherit;
+            outline: none;
+            transition: border-color 0.3s;
+        }
+        input[type="text"]:focus, select:focus { border-color: #EC407A; }
+        select option { background: #fff; color: #333; }
+        .btn-agregar {
+            padding: 12px 30px;
+            background: linear-gradient(135deg, #F8BBD0, #F48FB1);
+            color: #fff; border: none; border-radius: 10px;
+            font-size: 1rem; font-weight: bold; cursor: pointer;
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+        .btn-agregar:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(244,143,177,0.4);
+        }
+        .filtros {
+            display: flex; gap: 10px; margin-bottom: 20px;
+            flex-wrap: wrap; align-items: center;
+            background: #fff; padding: 15px; border-radius: 12px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.06);
+        }
+        .buscador { flex: 1; min-width: 180px; position: relative; }
+        .buscador input {
+            width: 100%; padding: 10px 14px 10px 38px;
+            border: 2px solid #e0e0e0; border-radius: 8px;
+            font-size: 0.95rem; color: #333; outline: none;
+            transition: border-color 0.3s;
+        }
+        .buscador input:focus { border-color: #EC407A; }
+        .buscador .icono {
+            position: absolute; left: 14px; top: 50%;
+            transform: translateY(-50%); color: #aaa;
+        }
+        .filtro-btn {
+            padding: 9px 18px;
+            background: #f8f9fc;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            color: #666; font-size: 0.85rem; font-weight: 600;
+            cursor: pointer; transition: all 0.3s;
+        }
+        .filtro-btn:hover { border-color: #EC407A; color: #EC407A; }
+        .filtro-btn.activo {
+            background: #EC407A; color: #fff; border-color: #EC407A;
+        }
+        .filtro-btn.cat-activo {
+            background: #8e24aa; color: #fff; border-color: #8e24aa;
+        }
+        .tareas-lista {
+            display: flex; flex-direction: column; gap: 10px;
+        }
+        .tarea {
+            display: flex; align-items: center; gap: 14px;
+            padding: 18px 20px;
+            background: #fff; border-radius: 12px;
+            border: 1px solid #e8e8e8;
+            transition: all 0.3s;
+            animation: entrada 0.3s ease;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+        }
+        @keyframes entrada {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .tarea:hover { border-color: #EC407A; box-shadow: 0 4px 15px rgba(0,0,0,0.08); }
+        .tarea.completada { opacity: 0.55; }
+        .tarea.completada .tarea-texto {
+            text-decoration: line-through; color: #999;
+        }
+        .checkbox {
+            width: 26px; height: 26px;
+            border: 2px solid #bbb; border-radius: 6px;
+            cursor: pointer; display: flex;
+            align-items: center; justify-content: center;
+            flex-shrink: 0; transition: all 0.3s; background: #fff;
+        }
+        .checkbox:hover { border-color: #66bb6a; }
+        .checkbox.marcado {
+            background: #66bb6a; border-color: #66bb6a;
+        }
+        .checkbox.marcado::after {
+            content: '✓'; color: #fff; font-size: 0.9rem; font-weight: bold;
+        }
+        .tarea-info { flex: 1; min-width: 0; }
+        .tarea-texto { font-size: 1rem; color: #333; margin-bottom: 5px; word-break: break-word; }
+        .tarea-meta {
+            display: flex; gap: 8px; align-items: center; flex-wrap: wrap;
+        }
+        .tarea-categoria {
+            padding: 3px 12px; border-radius: 12px;
+            font-size: 0.72rem; font-weight: 600;
+        }
+        .cat-estudio { background: rgba(33,150,243,0.15); color: #1565c0; }
+        .cat-personal { background: rgba(156,39,176,0.15); color: #7b1fa2; }
+        .cat-urgente { background: rgba(244,67,54,0.15); color: #c62828; }
+        .cat-otro { background: rgba(255,152,0,0.15); color: #e65100; }
+        .tarea-fecha { color: #999; font-size: 0.78rem; }
+        .tarea-prioridad {
+            border: 1px solid #ffb74d; color: #e65100;
+            background: rgba(255,183,77,0.15);
+            padding: 2px 8px; border-radius: 8px;
+            font-size: 0.7rem; font-weight: 600;
+        }
+        .btn-icono {
+            background: none; border: none; cursor: pointer;
+            font-size: 1.1rem; padding: 5px;
+            transition: transform 0.2s; flex-shrink: 0;
+        }
+        .btn-icono:hover { transform: scale(1.2); }
+        .btn-editar { color: #EC407A; margin-right: 4px; }
+        .btn-eliminar { color: #c62828; }
+        .vacio {
+            text-align: center; padding: 50px 20px; color: #999;
+        }
+        .vacio .icono { font-size: 3.5rem; margin-bottom: 15px; }
+        .modal {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.6); z-index: 1000;
+            display: none; justify-content: center; align-items: center;
+        }
+        .modal.activo { display: flex; }
+        .modal-content {
+            background: #fff; border-radius: 14px; padding: 30px;
+            width: 90%; max-width: 480px; animation: modalEntrada 0.3s ease;
+        }
+        @keyframes modalEntrada {
+            from { opacity: 0; transform: scale(0.9); }
+            to { opacity: 1; transform: scale(1); }
+        }
+        .modal-content h2 { color: #EC407A; margin-bottom: 22px; font-size: 1.2rem; }
+        .modal-content .form-group { margin-bottom: 15px; }
+        .modal-content label {
+            display: block; font-size: 0.85rem; color: #666;
+            margin-bottom: 6px; font-weight: 600;
+        }
+        .modal-content input, .modal-content select {
+            width: 100%; padding: 11px 14px;
+            border: 2px solid #e0e0e0; border-radius: 8px;
+            font-size: 0.95rem; color: #333; outline: none;
+            transition: border-color 0.3s;
+        }
+        .modal-content input:focus, .modal-content select:focus {
+            border-color: #EC407A;
+        }
+        .modal-botones {
+            display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px;
+        }
+        .btn-modal {
+            padding: 11px 25px; border: none; border-radius: 8px;
+            font-size: 0.95rem; font-weight: 600; cursor: pointer;
+            transition: transform 0.2s;
+        }
+        .btn-cancelar { background: #e0e0e0; color: #555; }
+        .btn-cancelar:hover { background: #d0d0d0; }
+        .btn-guardar { background: #EC407A; color: #fff; }
+        .btn-guardar:hover { box-shadow: 0 4px 15px rgba(106,27,154,0.3); }
+        footer {
+            text-align: center; padding: 25px; color: #999;
+            font-size: 0.9rem; border-top: 1px solid #e0e0e0; margin-top: 30px;
+        }
+        @media (max-width: 600px) {
+            header h1 { font-size: 1.5rem; }
+            .stats-bar { gap: 8px; }
+            .stat-pill { padding: 8px 14px; font-size: 0.8rem; }
+            .form-row { flex-direction: column; }
+            .form-row input[type="text"], .form-row select {
+                min-width: 100%;
+            }
+            .btn-agregar { width: 100%; }
+            .filtros { flex-direction: column; }
+            .buscador { min-width: 100%; }
+            .tarea { padding: 14px; flex-wrap: wrap; }
+            .tarea-info { min-width: 60%; }
+            .tarea-meta { flex-direction: column; align-items: flex-start; gap: 4px; }
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>&#9889; Smart <span>Task Manager</span></h1>
+        <p>Organiza tu día de forma inteligente</p>
+        <div class="stats-bar">
+            <div class="stat-pill stat-pendientes">&#128339; Pendientes: <span id="countPendientes">0</span></div>
+            <div class="stat-pill stat-completadas">&#9989; Completadas: <span id="countCompletadas">0</span></div>
+            <div class="stat-pill stat-total">&#128203; Total: <span id="countTotal">0</span></div>
+        </div>
+    </header>
+
+    <div class="app">
+
+        <div class="form-card">
+            <h2>&#10133; Nueva Tarea</h2>
+            <div class="form-row">
+                <input type="text" id="inputTarea" placeholder="¿Qué necesitas hacer?" onkeypress="if(event.key==='Enter')agregarTarea()">
+                <select id="inputCategoria">
+                    <option value="estudio">&#128218; Estudio</option>
+                    <option value="personal">&#128100; Personal</option>
+                    <option value="urgente">&#128308; Urgente</option>
+                    <option value="otro">&#128196; Otro</option>
+                </select>
+                <select id="inputPrioridad">
+                    <option value="media">Prioridad media</option>
+                    <option value="alta">Prioridad alta</option>
+                    <option value="baja">Prioridad baja</option>
+                </select>
+                <button class="btn-agregar" onclick="agregarTarea()">Agregar</button>
+            </div>
+        </div>
+
+        <div class="filtros">
+            <div class="buscador">
+                <span class="icono">&#128269;</span>
+                <input type="text" id="buscador" placeholder="Buscar tareas..." oninput="renderizarTareas()">
+            </div>
+            <button class="filtro-btn" data-filtro="todas" onclick="setFiltro('todas', this)">Todas</button>
+            <button class="filtro-btn activo" data-filtro="pendientes" onclick="setFiltro('pendientes', this)">Pendientes</button>
+            <button class="filtro-btn" data-filtro="completadas" onclick="setFiltro('completadas', this)">Completadas</button>
+        </div>
+
+        <div class="filtros">
+            <button class="filtro-btn cat-activo" data-cat="todas" onclick="setCategoriaFiltro('todas', this)">Todas</button>
+            <button class="filtro-btn" data-cat="estudio" onclick="setCategoriaFiltro('estudio', this)">&#128218; Estudio</button>
+            <button class="filtro-btn" data-cat="personal" onclick="setCategoriaFiltro('personal', this)">&#128100; Personal</button>
+            <button class="filtro-btn" data-cat="urgente" onclick="setCategoriaFiltro('urgente', this)">&#128308; Urgente</button>
+            <button class="filtro-btn" data-cat="otro" onclick="setCategoriaFiltro('otro', this)">&#128196; Otro</button>
+        </div>
+
+        <div class="tareas-lista" id="listaTareas"></div>
+
+    </div>
+
+    <div class="modal" id="modalEditar">
+        <div class="modal-content">
+            <h2>&#9998; Editar Tarea</h2>
+            <div class="form-group">
+                <label>Descripción</label>
+                <input type="text" id="editarTexto">
+            </div>
+            <div class="form-group">
+                <label>Categoría</label>
+                <select id="editarCategoria">
+                    <option value="estudio">Estudio</option>
+                    <option value="personal">Personal</option>
+                    <option value="urgente">Urgente</option>
+                    <option value="otro">Otro</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Prioridad</label>
+                <select id="editarPrioridad">
+                    <option value="baja">Baja</option>
+                    <option value="media">Media</option>
+                    <option value="alta">Alta</option>
+                </select>
+            </div>
+            <div class="modal-botones">
+                <button class="btn-modal btn-cancelar" onclick="cerrarModal()">Cancelar</button>
+                <button class="btn-modal btn-guardar" onclick="guardarEdicion()">Guardar</button>
+            </div>
+        </div>
+    </div>
+
+    <footer>
+        <p>&copy; 2026 Smart Task Manager</p>
+    </footer>
+
+    <script>
+        var tareas = [];
+        var tareaEditando = null;
+        var filtroActual = 'pendientes';
+        var categoriaFiltro = 'todas';
+
+        var etiquetas = {
+            'estudio': 'Estudio',
+            'personal': 'Personal',
+            'urgente': 'Urgente',
+            'otro': 'Otro'
+        };
+
+        function guardarTareas() {
+            localStorage.setItem('smartTasks', JSON.stringify(tareas));
+        }
+
+        function cargarTareas() {
+            var datos = localStorage.getItem('smartTasks');
+            if (datos) { tareas = JSON.parse(datos); }
+        }
+
+        function agregarTarea() {
+            var input = document.getElementById('inputTarea');
+            var texto = input.value.trim();
+            if (texto === '') return;
+
+            var tarea = {
+                id: Date.now(),
+                texto: texto,
+                categoria: document.getElementById('inputCategoria').value,
+                prioridad: document.getElementById('inputPrioridad').value,
+                completada: false,
+                fecha: new Date().toLocaleDateString('es-ES')
+            };
+
+            tareas.unshift(tarea);
+            guardarTareas();
+            renderizarTareas();
+            input.value = '';
+            input.focus();
+        }
+
+        function toggleTarea(id) {
+            for (var i = 0; i < tareas.length; i++) {
+                if (tareas[i].id === id) {
+                    tareas[i].completada = !tareas[i].completada;
+                    break;
+                }
+            }
+            guardarTareas();
+            renderizarTareas();
+        }
+
+        function eliminarTarea(id) {
+            tareas = tareas.filter(function(t) { return t.id !== id; });
+            guardarTareas();
+            renderizarTareas();
+        }
+
+        function abrirModal(id) {
+            for (var i = 0; i < tareas.length; i++) {
+                if (tareas[i].id === id) {
+                    tareaEditando = tareas[i];
+                    document.getElementById('editarTexto').value = tareas[i].texto;
+                    document.getElementById('editarCategoria').value = tareas[i].categoria;
+                    document.getElementById('editarPrioridad').value = tareas[i].prioridad;
+                    break;
+                }
+            }
+            document.getElementById('modalEditar').classList.add('activo');
+        }
+
+        function cerrarModal() {
+            document.getElementById('modalEditar').classList.remove('activo');
+            tareaEditando = null;
+        }
+
+        function guardarEdicion() {
+            if (!tareaEditando) return;
+            var texto = document.getElementById('editarTexto').value.trim();
+            if (texto === '') return;
+
+            var categoria = document.getElementById('editarCategoria').value;
+            var prioridad = document.getElementById('editarPrioridad').value;
+
+            for (var i = 0; i < tareas.length; i++) {
+                if (tareas[i].id === tareaEditando.id) {
+                    tareas[i].texto = texto;
+                    tareas[i].categoria = categoria;
+                    tareas[i].prioridad = prioridad;
+                    break;
+                }
+            }
+
+            guardarTareas();
+            renderizarTareas();
+            cerrarModal();
+        }
+
+        function setFiltro(filtro, btn) {
+            filtroActual = filtro;
+            limpiarActivos('.filtros:first-of-type .filtro-btn');
+            btn.classList.add('activo');
+            renderizarTareas();
+        }
+
+        function setCategoriaFiltro(cat, btn) {
+            categoriaFiltro = cat;
+            limpiarActivos('.filtros:nth-of-type(2) .filtro-btn');
+            btn.classList.add('cat-activo');
+            renderizarTareas();
+        }
+
+        function limpiarActivos(selector) {
+            var botones = document.querySelectorAll(selector);
+            for (var i = 0; i < botones.length; i++) {
+                botones[i].classList.remove('activo');
+                botones[i].classList.remove('cat-activo');
+            }
+        }
+
+        function renderizarTareas() {
+            var busqueda = document.getElementById('buscador').value.toLowerCase();
+            var lista = document.getElementById('listaTareas');
+
+            var filtradas = tareas.filter(function(t) {
+                if (filtroActual === 'pendientes' && t.completada) return false;
+                if (filtroActual === 'completadas' && !t.completada) return false;
+                if (categoriaFiltro !== 'todas' && t.categoria !== categoriaFiltro) return false;
+                if (busqueda && t.texto.toLowerCase().indexOf(busqueda) === -1) return false;
+                return true;
+            });
+
+            if (filtradas.length === 0) {
+                lista.innerHTML = '<div class="vacio"><div class="icono">&#128203;</div><p>No hay tareas para mostrar</p></div>';
+            } else {
+                var html = '';
+                for (var i = 0; i < filtradas.length; i++) {
+                    var t = filtradas[i];
+                    var claseCompletada = t.completada ? ' completada' : '';
+                    var claseCheckbox = t.completada ? ' marcado' : '';
+                    var catClass = 'cat-' + t.categoria;
+                    var catLabel = etiquetas[t.categoria] || t.categoria;
+                    var prioridadTag = t.prioridad === 'alta'
+                        ? '<span class="tarea-prioridad">&#9888; Alta</span>'
+                        : '';
+
+                    html += '<div class="tarea' + claseCompletada + '">';
+                    html += '<div class="checkbox' + claseCheckbox + '" onclick="toggleTarea(' + t.id + ')"></div>';
+                    html += '<div class="tarea-info">';
+                    html += '<div class="tarea-texto">' + t.texto + '</div>';
+                    html += '<div class="tarea-meta">';
+                    html += '<span class="tarea-categoria ' + catClass + '">' + catLabel + '</span>';
+                    html += prioridadTag;
+                    html += '<span class="tarea-fecha">' + t.fecha + '</span>';
+                    html += '</div>';
+                    html += '</div>';
+                    html += '<button class="btn-icono btn-editar" onclick="abrirModal(' + t.id + ')" title="Editar">&#9998;</button>';
+                    html += '</div>';
+                }
+                lista.innerHTML = html;
+            }
+
+            actualizarStats();
+        }
+
+        function actualizarStats() {
+            var pendientes = 0;
+            for (var i = 0; i < tareas.length; i++) {
+                if (!tareas[i].completada) pendientes++;
+            }
+            document.getElementById('countPendientes').textContent = pendientes;
+            document.getElementById('countCompletadas').textContent = tareas.length - pendientes;
+            document.getElementById('countTotal').textContent = tareas.length;
+        }
+
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') cerrarModal();
+        });
+
+        cargarTareas();
+        renderizarTareas();
+    </script>
+
+</body>
+</html>
